@@ -277,6 +277,7 @@ type SecureMessageService struct {
 	// end-point level configuration - only one for now: create a message from source (decode / encode)
 	convertMessage gorest.EndPoint `method:"POST" path:"/messages/" postdata:"Message"`
 	restTest gorest.EndPoint `method:"GET" path:"/resttest/{cmd:string}" output:"string"`
+	showStatus gorest.EndPoint `method:"GET" path:"/status/" output:"string"`
 }
 
 /*
@@ -363,11 +364,22 @@ func(serv SecureMessageService) RestTest(cmd string) string {
 			msgRaw := &Message{Encoded: false, Body: "this is a test"}
 			msgConverted, _ := convertMessage(*msgRaw)
 			result = msgConverted.String()
+		case "status":
+			result = "Message Secure Send Server Running OK"
 		default:
 			result = "unknown test command"
 	}
     return result
 }
+
+/*
+=============================================================================
+ ShowStatus() - REST interface that shows the server is running
+---------------------------------------------------------------------------*/
+func(serv SecureMessageService) ShowStatus() string {
+	return "Message Secure Send Server: Running OK"
+}
+
 
 /*
 =============================================================================
@@ -381,7 +393,7 @@ func main() {
 	gorest.RegisterService(new(SecureMessageService))
 	http.Handle("/", gorest.Handle())
 		
-	err := http.ListenAndServe("localhost:4000", nil)
+	err := http.ListenAndServe(":4000", nil)
 	if err != nil {
 		log.Fatal(err)
 	}
