@@ -304,8 +304,10 @@ func convertMessage(message Message) (Message, error) {
 			converted.Body = string(plaintext)
 			converted.Encoded = false
 			converted.Hint = "OK"
+			fmt.Println("Message Decryption Successful")
 		} else {
 			converted.Hint = err.Error()
+			fmt.Println("Message Decryption Failed") // TBD: figure out logging
 		}
 
 	
@@ -316,8 +318,10 @@ func convertMessage(message Message) (Message, error) {
 			converted.Body = ciphertext
 			converted.Encoded = true
 			converted.Hint = "OK"
+			fmt.Println("Message Encryption Successful")
 		} else {
 			converted.Hint = err.Error()
+			fmt.Println("Message Encryption Failed")
 		}
 	}
 	return converted, err
