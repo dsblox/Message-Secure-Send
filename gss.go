@@ -384,7 +384,6 @@ func(serv SecureMessageService) ShowStatus() string {
 	return "Message Secure Send Server: Running OK"
 }
 
-
 /*
 =============================================================================
  main() - set up gorest and HTTP server and await commands
@@ -397,7 +396,8 @@ func main() {
 	gorest.RegisterService(new(SecureMessageService))
 	http.Handle("/", gorest.Handle())
 		
-	err := http.ListenAndServe(":4000", nil)
+	// err := http.ListenAndServe(":4000", nil)
+	err := http.ListenAndServeTLS(":4000", "self-signed.crt", "server.key", nil)
 	if err != nil {
 		log.Fatal(err)
 	}
