@@ -397,7 +397,7 @@ func main() {
 	http.Handle("/", gorest.Handle())
 		
 	// err := http.ListenAndServe(":4000", nil)
-	err := http.ListenAndServeTLS(":4000", "self-signed.crt", "server.key", nil)
+	err := http.ListenAndServeTLS(":4000", "/certs/self-signed.crt", "/certs/server.key", nil)
 	if err != nil {
 		log.Fatal(err)
 	}
