@@ -1,0 +1,29 @@
+<html ng-app="gss_client">
+
+<head>
+</head>
+
+<body ng-controller="GssController as gss">
+	<form name="messageForm" ng-controller="MessageController as messageCtrl" ng-submit="messageForm.$valid && messageCtrl.encryptMessage()" novalidate>
+		<message-display></message-display>
+		<label>Subject:</label><input ng-model="messageCtrl.message.subject" name="subject" type="text" />
+		<label>From:</label><input ng-model="messageCtrl.message.from" name="from" type="email" />
+		<label>To:</label><input ng-model="messageCtrl.message.to" name="to" type="email" />
+		<textarea ng-model="messageCtrl.message.body" required></textarea>
+		<div> messageForm is {{messageForm.$valid}} </div>
+		<input type="submit" value="Submit" />
+	</form>
+	<ul>
+		<li ng-repeat="product in gss.products">
+			<h3> {{ product.name }}
+				<em>{{ product.price | currency }}</em>
+			</h3>
+		</li>
+	</ul>
+	
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.26/angular.min.js"></script>
+<script type="text/javascript" src="app.js"></script>
+
+</body>
+</html>
+
