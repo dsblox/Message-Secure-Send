@@ -9,6 +9,97 @@
 		this.products = gems;
 		this.message = email;
 	});
+
+	app.controller('CryptoController', ['$http', function($http) {
+		this.crypto = {};
+		this.crypto.passphrase = "";
+		this.crypto.plaintext = "Secret Message to Encrypt";
+		this.crypto.encrypted = "";
+		this.crypto.status = "OK";
+		var me = this;
+		this.checkServerStatus = function() {
+			$http.get("https://localhost:4000/api/securemessage/status").success(function(data) {
+				me.crypto.status = data;
+			});
+		};
+
+		
+		this.encrypt = function() {
+			// encrypt the plaintext message
+			var jsonMsg = {
+				Encoded: false,
+				Hint: 'test',
+				Passphrase: this.crypto.passphrase,
+				Body: this.crypto.plaintext,
+			}
+			$http.post("https://localhost:4000/api/securemessage/messages", jsonMsg).success(function(data) {
+				jsonResult = data;
+				me.crypto.encrypted = jsonResult.Body;
+				me.crypto.status = jsonResult.Hint;
+			});
+		};
+
+		this.decrypt = function() {
+			// encrypt the plaintext message
+			var jsonMsg = {
+				Encoded: true,
+				Hint: 'test',
+				Passphrase: this.crypto.passphrase,
+				Body: this.crypto.encrypted,
+			}
+			$http.post("https://localhost:4000/api/securemessage/messages", jsonMsg).success(function(data) {
+				jsonResult = data;
+				me.crypto.plaintext = jsonResult.Body;
+				me.crypto.status = jsonResult.Hint;
+			});
+		};
+
+	}]);
+
+	app.controller('DecoderController', ['$http', function($http) {
+		this.decoder = {};
+		this.decoder.hint = "";
+		this.decoder.passphrase = "";
+		this.decoder.plaintext = "";
+		this.decoder.encrypted = "";
+		this.decoder.message = "";
+		var me = this;
+
+		function checkStr(str) {
+			return str != null && str.length > 0;			
+		}
+
+		this.hasHint = function () {
+			// this.decoder.encrypted = this.decoder.hint.length();
+			// return this.decoder.hint != null && this.decoder.hint.length() > 0;
+			return checkStr(this.decoder.hint);
+		};
+
+		this.hasPlaintext = function () {
+			return checkStr(this.decoder.plaintext);
+		};
+
+		this.hasMessage = function () {
+			return checkStr(this.decoder.message);
+		};
+
+		this.decrypt = function() {
+			var jsonMsg = {
+				Encoded: true,
+				Hint: 'test',
+				Passphrase: this.decoder.passphrase,
+				Body: this.decoder.encrypted,
+			}
+			$http.post("https://localhost:4000/api/securemessage/messages", jsonMsg).success(function(data) {
+				jsonResult = data;
+				me.decoder.plaintext = jsonResult.Body;
+				me.decoder.message = jsonResult.Hint;
+			});
+		};
+
+
+	}]);
+
 	
 	// this controller is around a message - note we are really not done - just using
 	// this to play and start to hook things up.  For now, what it does...

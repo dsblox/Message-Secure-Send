@@ -70,7 +70,8 @@ func (msg Message) String() string {
  Gorest Service Configuration - just 2 endpoints - see below for comments
 ---------------------------------------------------------------------------*/
 type SecureMessageService struct {
-	// service level configuration
+
+	// service level configuration - sets the path over which the REST service will listen
 	gorest.RestService `root:"/api/securemessage/" consumes:"application/json" produces:"application/json"`
 	
 	// end-point level configuration - only one for now: create a message from source (decode / encode)

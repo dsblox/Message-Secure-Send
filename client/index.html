@@ -1,9 +1,124 @@
-<html ng-app="gss_client">
+<!DOCTYPE html>
+<html lang="en" ng-app="gss_client">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Message Secure Send Client</title>
 
-<head>
-</head>
+    <!-- Bootstrap -->
+	<!-- Latest compiled and minified CSS -->
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+
+	<!-- Optional theme -->
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap-theme.min.css">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <style>
+		.centered { display: block; margin: 0 auto; }
+		.btn-space { margin-top: 5px;}
+		.entry-height { height: 200px;}
+    </style>
+
+	</head>
+
+
+<script>
+function getEncrypted() {
+
+}
+function getHint() {
+	
+}
+var parser = document.createElement('a');
+parser.href = "http://example.com:3000/pathname/?search=test#hash";
+
+parser.protocol; // => "http:"
+parser.hostname; // => "example.com"
+parser.port;     // => "3000"
+parser.pathname; // => "/pathname/"
+parser.search;   // => "?search=test"
+parser.hash;     // => "#hash"
+parser.host;     // => "example.com:3000"
+</script>
 
 <body ng-controller="GssController as gss">
+
+	<div class="container-fluid">
+		<h1>Message Secure Send Email Decoder</h1>
+		<form name="decoderForm" ng-controller="DecoderController as decoderCtrl" ng-submit="decoderCtrl.decrypt()" novalidate>
+			<div class="row">
+				<div class="col-sm-12" ng-show="decoderCtrl.hasHint()">
+					<p>The sender has supplied the following hint or question as a prompt for the passphrase: <b>{{decoderCtrl.decoder.hint}}</b></p>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-sm-12">
+					<label>Passphrase:</label>
+					<input ng-model="decoderCtrl.decoder.passphrase" name="passphrase" type="password" />
+					<input class="btn-primary" type="submit" value="Decrypt" />
+				</div>
+			</div>
+			<div ng-show="decoderCtrl.hasPlaintext()" class="row">
+				<p>{{decoderCtrl.decoder.plaintext}}</p>
+			</div>
+			<div ng-show="decoderCtrl.hasMessage" class="row">
+				<p>{{decoderCtrl.decoder.message}}</p>
+			</div>
+			<hr />
+			<input ng-model="decoderCtrl.decoder.encrypted" name="encrypted" type="text" />
+		</form>
+	</div>
+
+
+
+	<div class="container-fluid">
+		<h1>Crypto Basic Test Form</h1>
+		<form name="cryptoForm" ng-controller="CryptoController as cryptoCtrl" novalidate>
+			<div class="row">
+				<div class="col-sm-5">
+					<label>Plaintext:</label><br />
+				</div>
+				<div class="col-sm-2"></div>
+				<div class="col-sm-5">
+					<label>Encrypted:</label><br />
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-sm-5">
+					<textarea class="form-control centered entry-height" ng-model="cryptoCtrl.crypto.plaintext"></textarea>
+				</div>
+				<div class="col-sm-2">
+					<label class="centered">Passphrase</label>
+					<input ng-model="cryptoCtrl.crypto.passphrase" name="passphrase" type="text"/>
+					<button class="btn btn-primary centered btn-space" ng-click="cryptoCtrl.encrypt()">Encrypt >></button>
+					<button class="btn btn-primary centered btn-space" ng-click="cryptoCtrl.decrypt()"><< Decrypt</button>
+				</div>
+				<div class="col-sm-5">
+					<textarea class="form-control centered entry-height" ng-model="cryptoCtrl.crypto.encrypted"></textarea>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-sm-1"></div>
+				<div class="col-sm-10">
+					<p class="text-center centered btn-space">Status: <small> {{ cryptoCtrl.crypto.status }} </small></p>
+					<button class="btn btn-info centered btn-space" ng-click="cryptoCtrl.checkServerStatus()">Check Server Status</button>
+				</div>
+				<div class="col-sm-1"></div>
+			</div>
+		</form>
+	</div>
+
+
+
+
 	<form name="messageForm" ng-controller="MessageController as messageCtrl" ng-submit="messageForm.$valid && messageCtrl.encryptMessage()" novalidate>
 		<message-display></message-display>
 		<label>Subject:</label><input ng-model="messageCtrl.message.subject" name="subject" type="text" />
@@ -12,6 +127,7 @@
 		<textarea ng-model="messageCtrl.message.body" required></textarea>
 		<div> messageForm is {{messageForm.$valid}} </div>
 		<input type="submit" value="Submit" />
+		<button ng-click="messageCtrl.encryptMessage()">Encrypt</button>
 	</form>
 	<ul>
 		<li ng-repeat="product in gss.products">
@@ -23,6 +139,12 @@
 	
 <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.26/angular.min.js"></script>
 <script type="text/javascript" src="app.js"></script>
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="js/bootstrap.min.js"></script>
+
 
 </body>
 </html>
