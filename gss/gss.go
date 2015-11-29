@@ -5,11 +5,16 @@ import (
 	"log"
 	"flag"
 	"strings"
+	"errors"
 	"net/http"
 	"encoding/json"
 	"code.google.com/p/gorest" 
-	crypto "github.com/user/gss/encrypt"
+	crypto "github.com/dsblox/Message-Secure-Send/encrypt"
 )
+
+// TBD: Get rid of this GOREST crap and simply support my own HTTP-level stuff
+// or look into XML-RPC.  Since there are no CRUD operations this server
+// just does not want to be REST.
 
 
 /*
@@ -52,9 +57,9 @@ import (
 ===========================================================================*/
 type Message struct {
 	Encoded bool
-	Hint string
 	Passphrase string
 	Body string
+	Status string
 }
 func (msg Message) Json() []byte {
 	j, _ := json.Marshal(msg)
@@ -64,6 +69,7 @@ func (msg Message) String() string {
 	j := msg.Json()
 	return string(j)
 }
+
 
 /*
 =============================================================================
@@ -75,59 +81,93 @@ type SecureMessageService struct {
 	gorest.RestService `root:"/api/securemessage/" consumes:"application/json" produces:"application/json"`
 	
 	// end-point level configuration - only one for now: create a message from source (decode / encode)
-	convertMessage gorest.EndPoint `method:"POST" path:"/messages/" postdata:"Message"`
-	restTest gorest.EndPoint `method:"GET" path:"/resttest/{cmd:string}" output:"string"`
+	getTest gorest.EndPoint `method:"GET" path:"/gettest/{cmd:string}" output:"string"`
 	showStatus gorest.EndPoint `method:"GET" path:"/status/" output:"string"`
 	
-	// client gorest.EndPoint `method:"GET" path:"/status/" output:"string"`
+	// new main entry points - just an encrpyt and decrypt method
+	encryptMessage gorest.EndPoint `method:"POST" path:"/encrypt/" postdata:"Message"`
+	decryptMessage gorest.EndPoint `method:"POST" path:"/decrypt/" postdata:"Message"`
 }
 
 /*
 =============================================================================
- convertMessage(message Message) (Message, error)
+ decryptMessage(message Message) (Message, error)
 -----------------------------------------------------------------------------
- Inputs:  message Message - Either an encrypted or decrypted message
- Returns:         Message - New message object in opposite state of input
+ Inputs:  crypto  Message - An encrypted message object
+ Returns:         Message - New message object decrypted
                   error   - 
                   
- Encrypt or decrypt the message, depending on the state the input comes in.
- If msg.Encoded is true, then decrypt; if false then encrypt.  This function
- always returns a Message, even on errors, but will set only the "Hint"
- (TBD: change to Error field) with the error string.
+ Decrypt the message returning a Message object with the body decrypted or
+ return the error in the Status field.
 ===========================================================================*/
-func convertMessage(message Message) (Message, error) {
+func decryptMessage(message Message) (Message, error) {
 	var converted Message
 	var err error
 
 	// if incoming message is encoded then decrypt the body
 	if message.Encoded {
-		plaintext, err := crypto.Decrypt(message.Passphrase, message.Body)
+		var plaintext string
+		plaintext, err = crypto.Decrypt(message.Passphrase, message.Body)
 		if err == nil {
 			converted.Body = string(plaintext)
-			converted.Encoded = false
-			converted.Hint = "OK"
+			converted.Status = "Decrypted OK"
 			fmt.Println("Message Decryption Successful")
 		} else {
-			converted.Hint = err.Error()
 			fmt.Println("Message Decryption Failed") // TBD: figure out logging
 		}
-
-	
-	// otherwise encrypt the body
 	} else {
-		ciphertext, err := crypto.Encrypt(message.Passphrase, message.Body)
+		err = errors.New("Decryption requested but message not encoded.")
+	}
+
+	// if an error the return the error to client, but eat the error here
+	if err != nil {
+		converted.Status = err.Error()
+		err = nil
+	}
+	
+	return converted, err
+}
+
+/*
+=============================================================================
+ encryptMessage(message Message) (Message, error)
+-----------------------------------------------------------------------------
+ Inputs:  plainttext  Message - A message object with text and passphrase
+ Returns:             Message - New message object cryptotext
+                      error   - 
+                  
+ Encrypt the message returning a Message object with the body holding crypto
+ or return the error in the Status field.
+===========================================================================*/
+func encryptMessage(message Message) (Message, error) {
+	var converted Message
+	var err error
+
+	// if incoming message is not encoded then encrypt the body
+	if !message.Encoded {
+		var ciphertext string
+		ciphertext, err = crypto.Encrypt(message.Passphrase, message.Body)
 		if err == nil {
 			converted.Body = ciphertext
 			converted.Encoded = true
-			converted.Hint = "OK"
+			converted.Status = "Encrypted OK"
 			fmt.Println("Message Encryption Successful")
 		} else {
-			converted.Hint = err.Error()
 			fmt.Println("Message Encryption Failed")
 		}
+	} else {
+		err = errors.New("Encryption requested but message encoded.")
 	}
+
+	// if an error then return the error to client, but eat it here
+	if (err != nil) {
+		converted.Status = err.Error()
+		err = nil
+	}
+	
 	return converted, err
 }
+
 
 /*
 =============================================================================
@@ -143,33 +183,53 @@ func (serv SecureMessageService) generateOKResponse(payload []byte) {
 
 /*
 =============================================================================
- ConvertMessage(message Message) - encrypt or decrypt a message
+ generatePayload(message Message, e error) - convert a message to gorest response
 ---------------------------------------------------------------------------*/
-func(serv SecureMessageService) ConvertMessage(message Message) {
+func generatePayload(message Message, e error) []byte {
 	var payload []byte
-	msgConverted, e := convertMessage(message)
-	if (e != nil) {
+	if (false && e != nil) {
+		// not sure why I'm not just eating the error and returning it
+		// maybe i should eat any known errors and allow thrown messages
+		// to be returned like this???
+		// probably should have a generateErrorResponse()
 		payload = []byte("Error: could not convert message")
 	} else {
-		payload,_ = gorest.InterfaceToBytes(msgConverted,"application/json")
+		payload,_ = gorest.InterfaceToBytes(message,"application/json")
 	}
-	serv.generateOKResponse(payload)
+	return payload
+}
+
+
+/*
+=============================================================================
+ EncryptMessage(message Message) - encrypt
+ DecryptMessage(message Message) - decrypt
+
+ These are glue functions between the gorest endpoint definitions and the
+ corresponding internal functions that actually make sense of the Message
+ struct and call the crypto packages to do the actual translations.
+---------------------------------------------------------------------------*/
+func(serv SecureMessageService) EncryptMessage(message Message) {
+	serv.generateOKResponse(generatePayload(encryptMessage(message)))
+    return
+}
+func(serv SecureMessageService) DecryptMessage(message Message) {
+	serv.generateOKResponse(generatePayload(decryptMessage(message)))
     return
 }
 
 
 /*
 =============================================================================
- RestTest(cmd string) - test interface to GET for easy browser testing
+ GetTest(cmd string) - test interface to GET for easy browser testing
 ---------------------------------------------------------------------------*/
-func(serv SecureMessageService) RestTest(cmd string) string {
+func(serv SecureMessageService) GetTest(cmd string) string {
 	var result string
 	switch (cmd) {
-		case "convert":
-			// intent is to change this to read URL parameters and call convertMessage
-			msgRaw := &Message{Encoded: false, Body: "this is a test"}
-			msgConverted, _ := convertMessage(*msgRaw)
-			result = msgConverted.String()
+		case "encrypt":
+			result = "to be implemented"
+		case "decrypt":
+			result = "to be implemented"
 		case "status":
 			result = "Message Secure Send Server Running OK"
 		default:
@@ -191,24 +251,49 @@ func(serv SecureMessageService) ShowStatus() string {
  main() - set up gorest and HTTP server and await commands
    -html - specifies the path on the server from which html files are served (default = /files)
    -certs - specifies the path on the server from when certificates are served (default = /certs)
+   -port = specifies the port the server will listen on (default = 4000)
+
+ Using the Server:
+
+  GSS is the server portion of the program and is accessible only via the
+  API.  Access the API via host:port/api/securemessage/CMD, with CMDs...
+    - GET:
+       . status - returns server status
+       . resttest - test interface to let me test various commands
+    - POST:
+       . messages - POST interface to convert a message in either direction
+    - TBD-POST:
+       . encrypt - encrypt a message and return cryptotext
+       . decrypt - decrypt a message and return plaintext
+
+
 ---------------------------------------------------------------------------*/
 
 func main() {
 	fmt.Printf("Welcome to Mail Secure Send Server\n")
+
+	// port on which we will listen (make part of configuration or command line?)
+
 	
 	// flags indicate the location of system resources:
 	// -html - absolute path to client files (will be available at /)
 	// -certs - absolute path to TLS cert files
+	// -port - port number on which to listen for requests
 	var static_files_location string
 	var certs_location string
+	var listenport string
 	flag.StringVar(&static_files_location, "html", "/files", "specify path to static web files on this server")
 	flag.StringVar(&certs_location, "certs", "/certs/", "specify path to static web files on this server")
+	flag.StringVar(&listenport, "port", "4000", "specify port on which the server will take requests")
 	flag.Parse()
 	if !strings.HasSuffix(certs_location, "/") {
 		certs_location = certs_location + "/"
 	}
 	if strings.HasSuffix(static_files_location, "/") {
 		static_files_location = strings.TrimSuffix(static_files_location, "/")
+	}
+	if !strings.HasPrefix(listenport, ":") {
+		listenport = ":" + listenport
 	}
 	
 	// use gorest to handle all HTTP requests to /api and file handler for /
@@ -220,7 +305,8 @@ func main() {
 	http.Handle("/", http.FileServer(http.Dir(static_files_location)))
 		
 	fmt.Printf("...serving certificates from %s\n", certs_location)
-	err := http.ListenAndServeTLS(":4000", certs_location + "self-signed.crt", certs_location + "server.key", nil)
+	fmt.Printf("...listening on port %s\n", listenport)
+	err := http.ListenAndServeTLS(listenport, certs_location + "self-signed.crt", certs_location + "server.key", nil)
 	if err != nil {
 		log.Fatal(err)
 	}

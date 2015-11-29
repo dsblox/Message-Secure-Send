@@ -32,10 +32,10 @@
 				Passphrase: this.crypto.passphrase,
 				Body: this.crypto.plaintext,
 			}
-			$http.post("https://localhost:4000/api/securemessage/messages", jsonMsg).success(function(data) {
+			$http.post("https://localhost:4000/api/securemessage/encrypt", jsonMsg).success(function(data) {
 				jsonResult = data;
 				me.crypto.encrypted = jsonResult.Body;
-				me.crypto.status = jsonResult.Hint;
+				me.crypto.status = jsonResult.Status;
 			});
 		};
 
@@ -47,10 +47,10 @@
 				Passphrase: this.crypto.passphrase,
 				Body: this.crypto.encrypted,
 			}
-			$http.post("https://localhost:4000/api/securemessage/messages", jsonMsg).success(function(data) {
+			$http.post("https://localhost:4000/api/securemessage/decrypt", jsonMsg).success(function(data) {
 				jsonResult = data;
 				me.crypto.plaintext = jsonResult.Body;
-				me.crypto.status = jsonResult.Hint;
+				me.crypto.status = jsonResult.Status;
 			});
 		};
 

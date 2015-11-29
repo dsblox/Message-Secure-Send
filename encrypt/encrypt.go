@@ -69,7 +69,7 @@ func extractDigest(message string) (string, error) {
 	bMessage := []byte(message)
 	messageCheck := bMessage[:checkLen]
 	if (bytes.Compare(messageCheck, check) != 0) {
-		return "", errors.New("passphrase incorrect")
+		return "", errors.New("passphrase incorrect or message corrupt")
 	}
 	bMessage = bMessage[checkLen:]
 
