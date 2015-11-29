@@ -32,6 +32,7 @@
 				Passphrase: this.crypto.passphrase,
 				Body: this.crypto.plaintext,
 			}
+			// $http.post("https://localhost:4000/mss/encrypt", jsonMsg).success(function(data) {
 			$http.post("https://localhost:4000/api/securemessage/encrypt", jsonMsg).success(function(data) {
 				jsonResult = data;
 				me.crypto.encrypted = jsonResult.Body;

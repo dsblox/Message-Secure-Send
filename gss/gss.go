@@ -1,12 +1,14 @@
 package main
 
 import (
+	"io"
 	"fmt"
 	"log"
 	"flag"
 	"strings"
 	"errors"
 	"net/http"
+	"net/url"
 	"encoding/json"
 	"code.google.com/p/gorest" 
 	crypto "github.com/dsblox/Message-Secure-Send/encrypt"
@@ -169,6 +171,7 @@ func encryptMessage(message Message) (Message, error) {
 }
 
 
+
 /*
 =============================================================================
  generateOKResponse(payload []byte) - utility to output success w any payload
@@ -225,7 +228,7 @@ func(serv SecureMessageService) DecryptMessage(message Message) {
 ---------------------------------------------------------------------------*/
 func(serv SecureMessageService) GetTest(cmd string) string {
 	var result string
-	switch (cmd) {
+	switch cmd {
 		case "encrypt":
 			result = "to be implemented"
 		case "decrypt":
@@ -245,6 +248,54 @@ func(serv SecureMessageService) GetTest(cmd string) string {
 func(serv SecureMessageService) ShowStatus() string {
 	return "Message Secure Send Server: Running OK"
 }
+
+// this is our API object - we can store some state here someday if we want
+type MessageSecureSend struct { }
+
+func (mss MessageSecureSend) ProcessCommand(cmd string, params url.Values) string {
+	var result string
+	switch cmd {
+	case "encrypt":
+		passphrase := params["passphrase"][0]
+		plaintext := params["plaintext"][0]
+		ciphertext, err := crypto.Encrypt(passphrase, plaintext)
+		if err == nil {
+			result = ciphertext
+		} else {
+			result = err.Error()
+		}
+	case "decrypt":
+		passphrase := params["passphrase"][0]
+		ciphertext := params["ciphertext"][0]
+		plaintext, err := crypto.Decrypt(passphrase, ciphertext)
+		if err == nil {
+			result = plaintext
+		} else {
+			result = err.Error()
+		}
+	case "status":
+		result = "Message Secure Send Server Running OK"
+	default:
+		result = "unknown test command"
+	}
+	return result
+}
+
+// implement one interface required by interface http.Handler
+func (mss MessageSecureSend) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "GET":
+		fallthrough
+	case "POST":
+		r.ParseForm()
+		fmt.Println(r.Form)
+		io.WriteString(w, mss.ProcessCommand(r.FormValue("cmd"), r.Form))
+	default:
+		io.WriteString(w, "Unsupported HTTP Method")
+	}
+}
+
+
 
 /*
 =============================================================================
@@ -299,6 +350,9 @@ func main() {
 	// use gorest to handle all HTTP requests to /api and file handler for /
 	gorest.RegisterService(new(SecureMessageService))
 	http.Handle("/api/", gorest.Handle())
+
+	// lets try to get into HTTP ourselves at /mss
+	http.Handle("/mss/", &MessageSecureSend{})	
 	
 	// use built-in file server to serve our client application (path?)
 	fmt.Printf("...serving static pages from %s\n", static_files_location)
