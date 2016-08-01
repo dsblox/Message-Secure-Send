@@ -65,6 +65,24 @@
 				</div>
 				<div class="col-sm-1"></div>
 			</div>
+			<div class="row">
+				<div class="col-sm-1"></div>
+				<div class="col-sm-10">
+					<label class="text-center centered btn-space">
+						<input ng-model="cryptoCtrl.crypto.method" name="method" type="checkbox" ng-true-value="POST" ng-false-value="GET"/>&nbsp;Use POST
+					</label>
+				</div>
+				<div class="col-sm-1"></div>
+			</div>
+			<div class="row">
+				<div class="col-sm-1"></div>
+				<div class="col-sm-10">
+					<label class="text-center centered btn-space">
+						<input ng-model="cryptoCtrl.crypto.responseFormat" name="responseFormat" type="checkbox" ng-true-value="json" ng-false-value="raw"/>&nbsp;JSON Response
+					</label>
+				</div>
+				<div class="col-sm-1"></div>
+			</div>
 		</form>
 	</div>
 

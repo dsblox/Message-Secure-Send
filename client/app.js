@@ -16,32 +16,118 @@
 		this.crypto.plaintext = "Secret Message to Encrypt";
 		this.crypto.encrypted = "";
 		this.crypto.status = "OK";
+		this.crypto.method = "GET";
+		this.crypto.responseFormat = "raw";
 		var me = this;
-		this.checkServerStatus = function() {
-			$http.get("https://localhost:4000/api/securemessage/status").success(function(data) {
+
+		function handleStatusSuccess(me, responseFormat, data) {
+			if (responseFormat == "raw") {
 				me.crypto.status = data;
-			});
+			}
+			else {
+				jsonResult = data;
+				if (jsonResult.Error != "OK") {
+					me.crypto.status = jsonResult.Error; 
+				}
+				else {
+					me.crypto.status = jsonResult.Status; 
+				}
+			}
+		}
+
+		function handleEncryptSuccess(me, responseFormat, data) {
+			if (responseFormat == "raw") {
+				me.crypto.encrypted = data;
+				me.crypto.status = "Encryption Complete (check Encrypted box for any error)";
+			}
+			else {
+				jsonResult = data;
+				if (jsonResult.Error != "OK") {
+					me.crypto.encrypted = ""; 
+					me.crypto.status = jsonResult.Error; 
+				}
+				else {
+					me.crypto.encrypted = jsonResult.Ciphertext; 
+					me.crypto.status = "Encryption Successful"
+				}
+			}
+		}
+
+		function handleDecryptSuccess(me, responseFormat, data) {
+			if (responseFormat == "raw") {
+				me.crypto.plaintext = data;
+				me.crypto.status = "Decryption Complete (check Plaintext box for any error)";
+			}
+			else {
+				jsonResult = data;
+				if (jsonResult.Error != "OK") {
+					me.crypto.plaintext = ""; 
+					me.crypto.status = jsonResult.Error; 
+				}
+				else {
+					me.crypto.plaintext = jsonResult.Plaintext; 
+					me.crypto.status = "Decryption Successful"
+				}
+			}
+		}
+
+
+		this.checkServerStatus = function() {
+			if (this.crypto.method == "GET") {
+				$http.get("https://localhost:4000/mss/?Cmd=status&ResponseFormat=" + this.crypto.responseFormat).success(function(data) {
+					handleStatusSuccess(me, me.crypto.responseFormat, data);
+				});
+			}
+			else {
+				var jsonMsg = {
+					Cmd: "status",
+					ResponseFormat: this.crypto.responseFormat
+				}
+				$http.post("https://localhost:4000/mss/", jsonMsg).success(function(data) {
+					handleStatusSuccess(me, me.crypto.responseFormat, data);
+				});
+			}
 		};
 
 		
 		this.encrypt = function() {
-			// encrypt the plaintext message
+			// encrypt the plaintext message -- old code built JSON incoming - may use again! 
+			/*
 			var jsonMsg = {
 				Encoded: false,
 				Hint: 'test',
 				Passphrase: this.crypto.passphrase,
 				Body: this.crypto.plaintext,
 			}
-			// $http.post("https://localhost:4000/mss/encrypt", jsonMsg).success(function(data) {
 			$http.post("https://localhost:4000/api/securemessage/encrypt", jsonMsg).success(function(data) {
 				jsonResult = data;
 				me.crypto.encrypted = jsonResult.Body;
 				me.crypto.status = jsonResult.Status;
 			});
+			*/
+			if (this.crypto.method == "GET") {
+				var urlparams = "Cmd=encrypt&Passphrase=" + this.crypto.passphrase + "&Plaintext=" + this.crypto.plaintext;
+				urlparams += "&ResponseFormat=" + this.crypto.responseFormat;
+				$http.get("https://localhost:4000/mss/?"+urlparams).success(function(data) {
+					handleEncryptSuccess(me, me.crypto.responseFormat, data);
+				});
+			}
+			else {
+				var jsonMsg = {
+					Cmd: "encrypt",
+					Passphrase: this.crypto.passphrase,
+					Plaintext: this.crypto.plaintext,
+					ResponseFormat: this.crypto.responseFormat
+				}
+				$http.post("https://localhost:4000/mss/", jsonMsg).success(function(data) {
+					handleEncryptSuccess(me, me.crypto.responseFormat, data);
+				});
+			}
 		};
 
 		this.decrypt = function() {
-			// encrypt the plaintext message
+			// encrypt the plaintext message  -- old code built JSON incoming - may use again! 
+			/*
 			var jsonMsg = {
 				Encoded: true,
 				Hint: 'test',
@@ -53,6 +139,25 @@
 				me.crypto.plaintext = jsonResult.Body;
 				me.crypto.status = jsonResult.Status;
 			});
+			*/
+			if (this.crypto.method == "GET") {
+				var urlparams = "Cmd=decrypt&Passphrase=" + this.crypto.passphrase + "&Ciphertext=" + this.crypto.encrypted;
+				urlparams += "&ResponseFormat=" + this.crypto.responseFormat;
+				$http.get("https://localhost:4000/mss/?"+urlparams).success(function(data) {
+					handleDecryptSuccess(me, me.crypto.responseFormat, data);
+				});
+			}
+			else {
+				var jsonMsg = {
+					Cmd: "decrypt",
+					Passphrase: this.crypto.passphrase,
+					Ciphertext: this.crypto.encrypted,
+					ResponseFormat: this.crypto.responseFormat
+				}
+				$http.post("https://localhost:4000/mss/", jsonMsg).success(function(data) {
+					handleDecryptSuccess(me, me.crypto.responseFormat, data);
+				});
+			}
 		};
 
 	}]);
