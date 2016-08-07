@@ -10,7 +10,7 @@
 		this.message = email;
 	});
 
-	app.controller('CryptoController', ['$http', function($http) {
+	app.controller('CryptoController', ['$http', '$location', function($http, $location) {
 		this.crypto = {};
 		this.crypto.passphrase = "";
 		this.crypto.plaintext = "Secret Message to Encrypt";
@@ -19,6 +19,12 @@
 		this.crypto.method = "GET";
 		this.crypto.responseFormat = "raw";
 		var me = this;
+
+		// build a server string that speaks API to the same host that served us
+		var protocol = "https"
+		var host = $location.host();
+		var port = 4000;
+		var server = protocol + "://" + host + ":" + port;
 
 		function handleStatusSuccess(me, responseFormat, data) {
 			if (responseFormat == "raw") {
@@ -71,10 +77,10 @@
 			}
 		}
 
-
+		// return a message indicating that the server is running
 		this.checkServerStatus = function() {
 			if (this.crypto.method == "GET") {
-				$http.get("https://localhost:4000/mss/?Cmd=status&ResponseFormat=" + this.crypto.responseFormat).success(function(data) {
+				$http.get(server + "/mss/?Cmd=status&ResponseFormat=" + this.crypto.responseFormat).success(function(data) {
 					handleStatusSuccess(me, me.crypto.responseFormat, data);
 				});
 			}
@@ -83,32 +89,19 @@
 					Cmd: "status",
 					ResponseFormat: this.crypto.responseFormat
 				}
-				$http.post("https://localhost:4000/mss/", jsonMsg).success(function(data) {
+				$http.post(server + "/mss/", jsonMsg).success(function(data) {
 					handleStatusSuccess(me, me.crypto.responseFormat, data);
 				});
 			}
 		};
 
 		
+		// encrypt the plaintext message
 		this.encrypt = function() {
-			// encrypt the plaintext message -- old code built JSON incoming - may use again! 
-			/*
-			var jsonMsg = {
-				Encoded: false,
-				Hint: 'test',
-				Passphrase: this.crypto.passphrase,
-				Body: this.crypto.plaintext,
-			}
-			$http.post("https://localhost:4000/api/securemessage/encrypt", jsonMsg).success(function(data) {
-				jsonResult = data;
-				me.crypto.encrypted = jsonResult.Body;
-				me.crypto.status = jsonResult.Status;
-			});
-			*/
 			if (this.crypto.method == "GET") {
 				var urlparams = "Cmd=encrypt&Passphrase=" + this.crypto.passphrase + "&Plaintext=" + this.crypto.plaintext;
 				urlparams += "&ResponseFormat=" + this.crypto.responseFormat;
-				$http.get("https://localhost:4000/mss/?"+urlparams).success(function(data) {
+				$http.get(server+"/mss/?"+urlparams).success(function(data) {
 					handleEncryptSuccess(me, me.crypto.responseFormat, data);
 				});
 			}
@@ -119,31 +112,18 @@
 					Plaintext: this.crypto.plaintext,
 					ResponseFormat: this.crypto.responseFormat
 				}
-				$http.post("https://localhost:4000/mss/", jsonMsg).success(function(data) {
+				$http.post(server + "/mss/", jsonMsg).success(function(data) {
 					handleEncryptSuccess(me, me.crypto.responseFormat, data);
 				});
 			}
 		};
 
+		// decrypt the cryptotext message
 		this.decrypt = function() {
-			// encrypt the plaintext message  -- old code built JSON incoming - may use again! 
-			/*
-			var jsonMsg = {
-				Encoded: true,
-				Hint: 'test',
-				Passphrase: this.crypto.passphrase,
-				Body: this.crypto.encrypted,
-			}
-			$http.post("https://localhost:4000/api/securemessage/decrypt", jsonMsg).success(function(data) {
-				jsonResult = data;
-				me.crypto.plaintext = jsonResult.Body;
-				me.crypto.status = jsonResult.Status;
-			});
-			*/
 			if (this.crypto.method == "GET") {
 				var urlparams = "Cmd=decrypt&Passphrase=" + this.crypto.passphrase + "&Ciphertext=" + this.crypto.encrypted;
 				urlparams += "&ResponseFormat=" + this.crypto.responseFormat;
-				$http.get("https://localhost:4000/mss/?"+urlparams).success(function(data) {
+				$http.get(server + "/mss/?"+urlparams).success(function(data) {
 					handleDecryptSuccess(me, me.crypto.responseFormat, data);
 				});
 			}
@@ -154,13 +134,17 @@
 					Ciphertext: this.crypto.encrypted,
 					ResponseFormat: this.crypto.responseFormat
 				}
-				$http.post("https://localhost:4000/mss/", jsonMsg).success(function(data) {
+				$http.post(server + "/mss/", jsonMsg).success(function(data) {
 					handleDecryptSuccess(me, me.crypto.responseFormat, data);
 				});
 			}
 		};
 
 	}]);
+
+	// the rest of the code in this file is probably obsolete - keeping structure
+	// in case it is useable for the actual UI for messaging
+
 
 	app.controller('DecoderController', ['$http', function($http) {
 		this.decoder = {};
