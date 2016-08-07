@@ -1,7 +1,7 @@
 FROM golang:1.6
 
 # download the message-secure-send source, build it and install it
-RUN go get github.com/dsblox/mss/... #force by changing this number 89
+RUN go get github.com/dsblox/mss/... #force by changing this number 90
 
 # set up some aliases useful in our development environment
 RUN echo 'alias cd-mss="cd /go/src/github.com/dsblox/mss"' >> ~/.bashrc
