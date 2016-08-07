@@ -318,8 +318,8 @@ func (mss MessageSecureSend) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 /*
 =============================================================================
  main() - set up HTTP server and await commands
-   -html - specifies the path on the server from which html files are served (default = /files)
-   -certs - specifies the path on the server from when certificates are served (default = /certs)
+   -html - specifies the path on the server from which html files are served (default = client)
+   -certs - specifies the path on the server from when certificates are served (default = .)
    -port = specifies the port the server will listen on (default = 4000)
 
  Using the Server:
@@ -341,8 +341,8 @@ func main() {
 	var static_files_location string
 	var certs_location string
 	var listenport string
-	flag.StringVar(&static_files_location, "html", "/files", "specify path to static web files on this server")
-	flag.StringVar(&certs_location, "certs", "/certs/", "specify path to static web files on this server")
+	flag.StringVar(&static_files_location, "html", "./client", "specify path to static web files on this server")
+	flag.StringVar(&certs_location, "certs", ".", "specify path to static web files on this server")
 	flag.StringVar(&listenport, "port", "4000", "specify port on which the server will take requests")
 	flag.Parse()
 	if !strings.HasSuffix(certs_location, "/") {
